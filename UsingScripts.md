@@ -93,6 +93,12 @@ your script component should now look like this:\
 
 the script and player should now function as intended 
 
+### OPTIONAL: using the script's animator
+the script ive made hard codes the animation so youll need to change the way your animator is set out, it heavily simplifies the process, after chcages it should look something like this:
+![Image not Found](picturesfortutorials\animator.png)
+TLDR: remove ur animation processes and rewire kinda like the image
+
+
 ## Camera Scripts
 > [camera_script_1](camera.cs)\
 > [Camera_script_2](Camera2.cs)\

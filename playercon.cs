@@ -26,8 +26,8 @@ public class playercon : MonoBehaviour
     public float jumpBufferTime = 0.12f; // this for jump buffering
 
     static int IdleS = Animator.StringToHash("MukIdle"); // yeah im not using the animator controller (remove if you are using it)
-    static int WalkS = Animator.StringToHash("MukWalk");
-    static int DashS = Animator.StringToHash("Mukdash");
+    static int WalkS = Animator.StringToHash("MukWalk"); // rename these to your animation names so that it work properly
+    static int DashS = Animator.StringToHash("Mukdash"); // these will only work if  your animations tare facing rightwards you can change it but it will require diving into the code
     static int JumpS = Animator.StringToHash("MukJump");
     static int WallSlideS = Animator.StringToHash("MukWallSlide");
 
