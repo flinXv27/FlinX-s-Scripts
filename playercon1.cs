@@ -74,3 +74,5 @@ public class playercon1 : MonoBehaviour
         rb.linearVelocity = vel;
     }
 }
+
+// made by pradhyot.N 21/10/2026 

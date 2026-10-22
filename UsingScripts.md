@@ -10,10 +10,10 @@ a guide by pradhyot.N
 - [Movement Script](#movement-script--player-controller)
 - [Camera Script](#camera-scripts)
 - [Collectible Scripts](#collectible-scripts)
-- [Enemy AI Script & AI Combat Script]
+- [Enemy AI Script & AI Combat Script](#enemy-ai--ai-combat)
 - [Player Combat Script]
 - [Complete Player Script]
-- [All Scripts]
+- [All Scripts](#all-scripts)
 ## Movement script / Player controller
 * note: this script is only focusing on the movement aspects of the game, if you want combat or a full movement + combat script then it will be introduced in a later interation of this file
 
@@ -147,7 +147,66 @@ but if you wanted to keep that place the following code into the player script:/
 the UI handler section only relates if you are using a ui feature    
 
 ## Enemy AI & AI Combat
-unfinished for now
+This section makes the following few assumptions:/
+* the enemy will preform an attack when in range of the player / use a projectile when possible
+* you want enemy pathfinding
+* You will not use the in built unity animator
+* The player should not phase through the enemy
+if any of the following doesn't apply to your game you will need to make some tweaks to the code/
+fortunately you should be able to understand the script somewhat as there are comments explaining what most features do.
+
+> [Patrolling Meele Enemy](SimpleEnemy.cs)\
+> [more will be added](null)
+
+the script's name is very misleading this script is **NOT** simple anyways links to the different installation guides:
+- [General Information](#general-information) **recommened to start on**
+- [Base enemy (Patrolling Meele Enemy)](#base-enemy) 
+- [Projectile Shooting enemy]
+- [tracker enemy]
+- [boss enemy]
+### General Information
+before we actually start implementaion we need to fully comprehend 2 concepts;
+
+#### **Gizmos**
+the gizmos are tools that show behaviour patterns and what not in the scene view editor they will appear as coloured objects that if used correctly will be able to show us - the editors on different enemy behaviours and patterns\
+example:\
+![image not found](picturesfortutorials\gizmopreview.png)\
+red cylinder = enemy\
+cyan circle = wall collider\
+green circles = ledge check & ground check\
+red circle = attack radius\
+yellow circle = enemy notice range
+
+this will be extremely important later so keep note of this
+
+#### **Tags & Layers**
+you would've already done work with tags when working with Mr Scott but they are now more important than ever, they will be one of 3 traits that make the enemy pathfinding possible\
+Meanwhile you would've set layers within the player controller so you should already understand how that works as well
+
+### Base enemy
+the base enemy will be the simplest to implement into your game, saying that it does look like plane controls when you open it up for the first time\
+anyways upon adding the script to the player enemy the script component should look like this:\
+![Image Not Found](picturesfortutorials\SimpleAIStart.png)\
+some of my changes have been made as to properly test that the script works beforehand but disregard that for the moment as the placement would change dependant on the person\
+Firstly you'd want to change the ground layer to be the layer where your tilemap or level is **ensure the enemy or player is not on that level**\
+once that is complete you'll have to move the gizmos so that checks and whatever is able to be completed
+Important info for placement:
+* the enemy using this script will always default to facing right
+* the cyan circle will need to be placed just directly infront of the enemy
+* the ground check circle will have to be on the direct bottom of the sprite
+* The Ledge Check gizmo will have to be on the bottom right corner of the sprite (just underneath the soles of the soes if you have that)
+* all other circles are also adjustable but refer back to the general information section to understand what each of them are\
+
+the enemy sprite should now looks something like this: \
+![Image Not found](picturesfortutorials\setupBasicEnemy.png)\
+You've just completed the hard part now all you need to do is adjust the variables to your liking and you are complete!
+- you can attempt to delve into the code if you please but i really don't recommend changing too much other than what ive annotated
+
+
+
+
+
+
 ## Player Combat
 unfinished for now
 ## Finalized Player Script
@@ -161,4 +220,5 @@ for those who just want the scripts and no waffle;
 > [Camera_script_3](Camera3.cs)\
 > [Teacher's_Camera](CameraFollow.cs)\
 > [Moving Collectible](HealthCollectible.cs)\
-> [basic collectible](Collectible.cs)
+> [basic collectible](Collectible.cs)\
+> [Base enemy](SimpleEnemy.cs)
