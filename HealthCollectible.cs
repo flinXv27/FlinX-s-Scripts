@@ -7,14 +7,7 @@ public class HealthCollectible : MonoBehaviour
     public int HealingAmount = 1;
     public float horizontal = 0.2f;
     public bool movingUp = true;
-    
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
 
-    // Update is called once per frame
     void FixedUpdate()
     {
        if (movingUp)
@@ -39,7 +32,7 @@ public class HealthCollectible : MonoBehaviour
     }
     public void OnTriggerEnter2D(Collider2D other)
     {
-        PlayerController controller = other.GetComponent<PlayerController>();
+        Playercon controller = other.GetComponent<PlayerController>();
         if (controller != null && controller.health < controller.maxHealth)
         {
             controller.ChangeHealth(HealingAmount);

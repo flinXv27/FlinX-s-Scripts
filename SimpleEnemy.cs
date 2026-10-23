@@ -1,7 +1,4 @@
 using UnityEngine;
-using System.Collections;
-using System;
-using UnityEngine.AI;
 
 // this was made for multiple people as why there are so many comments
 // quick warning, this script will house all the player functions and will be crazy hard to debug, if you have any specific problems please contact me and ill try patching it!
@@ -10,9 +7,9 @@ using UnityEngine.AI;
 // remember, if the variable is public it can be changed within unity itself for ur testing
 // many debug features are currently commented uncomment if you want to use them, also only use one debug at a time
 // honestly i'll add the rest of the comments if enough people want it but im really not bothered right now
-public class SimpleEnemy : MonoBehaviour
+public class SimpleEnemy : MonoBehaviour, IDamageable
 {
-    // some common prefixes i use:
+    // some common prefixes i use: (Note: will not be the same across scripts)
     // D = Detection or things that would link to that
     // A = attacking or things that would lead to that
     // S = animation states
@@ -34,6 +31,11 @@ public class SimpleEnemy : MonoBehaviour
     float windupTimer;
     float Jtimer;
     float loseTimer;
+    float airtime;
+    float airSpeed;
+    float freezeTimer;
+    float hopVel;
+    bool Commited;
     bool Jqueue;
     bool grounded;
     bool ledgeAhead;
@@ -41,6 +43,7 @@ public class SimpleEnemy : MonoBehaviour
     int currentAnim;
     bool SpriteFacingL = true;
     Vector2 lastSeen; 
+    int health;
   
 
     [Header("Jumping stuff")]
@@ -48,11 +51,17 @@ public class SimpleEnemy : MonoBehaviour
     public float JCooldown = .4f;
     public float Jheight = 8f;
     public float JifAbove = 1.5f;
+    public float airSpeedMulti = 1f;
 
     [Header("Tracking a player Downwards")]
     public bool CanDrop = true;
     public float dropIfBelow = 1.5f;
     public float Maxfall = 6f;
+    public float dropHop = 4f;
+
+    [Header("Enemy Freezing")]
+    public float LandFreeze = .3f;
+    public float ARecover = .5f;
 
     [Header("Ground Checks")]
     public LayerMask groundLayer;
@@ -74,24 +83,40 @@ public class SimpleEnemy : MonoBehaviour
     public float StopX = .5f;
     public int Damage = 1;
 
+    [Header("Health & hit reaction")]
+    public int MaxHealth = 3;
+    public Vector2 KnockbackForce = new Vector2(6f, 4f);
+    public float StunTime = .25f;   // how long it's stunned after a hit
+    public float HitFlashTime = .15f;
+    public Color HitColor = Color.red;
+    float stunTimer;
+    float flashTimer;
+    bool flashing;
+    Color baseColor;
+    IDamageable playerHealth;
+
     static int IdleS = Animator.StringToHash("officerIdle"); // rename to match your animation clips
     static int WalkS = Animator.StringToHash("officerWalk");
     static int AttackS = Animator.StringToHash("officerAttack");
 
     void DoAttack()
     {
-        if (player == null) return;
+        if (player == null || playerHealth == null) return;
         bool inRange = Vector2.Distance(transform.position, player.position) <= ARange + .3f;
         bool inHeight = Mathf.Abs(player.position.y - transform.position.y) <= AHeight + .3f;
         if (inRange && inHeight)
         {
-            Debug.Log("Player has Taken damage (placeholder)"); // this will be replaced in the section where the player has health added
+            playerHealth.TakeDamage(Damage, transform.position);
         }
     }
+    
     bool HasLOS()
     {
-        return !Physics2D.Linecast(transform.position, player.position, groundLayer);
+        bool clear = !Physics2D.Linecast(transform.position, player.position, groundLayer);
+        Debug.DrawLine(transform.position, player.position, clear ? Color.green : Color.red); // shows enemy LOS
+        return clear;
     }
+
     void FaceTarget(float dx)
     {
         if (Mathf.Abs(dx) > .1f)
@@ -100,20 +125,76 @@ public class SimpleEnemy : MonoBehaviour
             applyFacing();
         }
     }
+
     void Flip()
     {
         facing = -facing;
         turnTimer = turnCooldown;
         applyFacing();
     }
+
+    void takeOff(float hop)
+    {
+        Jqueue = true;
+        hopVel = hop;
+        Jtimer = JCooldown;
+        Commited = true;
+        airtime = 0f;
+        airSpeed = currentSpeed * airSpeedMulti;
+    }
+
     void applyFacing()
     {
         sr.flipX = SpriteFacingL ? facing > 0f : facing < 0f;
     }
+
     Vector2 Fwd(Vector2 offset)
     {
         return new Vector2(offset.x * facing, offset.y);
     }
+
+    public void TakeDamage(int amount, Vector2 from)
+    {
+        health -= amount;
+        if (health <= 0)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        flashTimer = HitFlashTime;
+        stunTimer = StunTime;
+        Jqueue = false;
+        Commited = false;
+        if (state == State.Attack) state = State.Chase;
+        if (state == State.Patrol && player != null)
+        {
+            state = State.Chase;
+            loseTimer = LoseTime;
+            lastSeen = player.position;
+        }
+        float side = transform.position.x >= from.x ? 1f : -1f;
+        rb.linearVelocity = new Vector2(side * KnockbackForce.x, KnockbackForce.y);
+    }
+
+    void UpdateFlash()
+    {
+        if (flashTimer > 0f)
+        {
+            flashTimer -= Time.deltaTime;
+            if (!flashing)
+            {
+                sr.color = HitColor; 
+                flashing = true;
+            }
+        }
+        else if (flashing)
+        {
+            sr.color = baseColor;
+            flashing = false;
+        }
+
+    }
+
     
     void Start()
     {
@@ -121,12 +202,23 @@ public class SimpleEnemy : MonoBehaviour
         anim = GetComponent<Animator>();
         sr = GetComponent<SpriteRenderer>();
         GameObject p = GameObject.FindGameObjectWithTag("Player");
-        if (p != null) player = p.transform;
         applyFacing();
+        baseColor = sr.color;
+        health = MaxHealth;
+        if (p != null)
+        {
+            player = p.transform;
+            playerHealth = p.GetComponent<IDamageable>();
+            if (playerHealth == null)
+                Debug.LogError($"Player '{p.name}' must have a component implementing IDamageable.", p);
+        }
     }
 
     void Update()
     {
+        if (stunTimer > 0f) stunTimer -= Time.deltaTime;
+        UpdateFlash();
+        if (freezeTimer > 0f) freezeTimer -= Time.deltaTime;
         if (turnTimer > 0f) turnTimer -= Time.deltaTime;
         if (ATimer > 0f) ATimer -= Time.deltaTime;
         if (Jtimer > 0f) Jtimer -= Time.deltaTime;
@@ -134,6 +226,16 @@ public class SimpleEnemy : MonoBehaviour
         grounded = Physics2D.OverlapCircle(pos + groundCheckOffset, checkRadius, groundLayer);
         ledgeAhead = Physics2D.OverlapCircle(pos + Fwd(ledgeCheckOffset), checkRadius, groundLayer);
         wallAhead = Physics2D.OverlapCircle(pos + Fwd(wallCheckOffset), checkRadius, groundLayer);
+        if (Commited)
+        {
+            airtime += Time.deltaTime;
+            bool landed = grounded && rb.linearVelocity.y <= .1f && airtime > .1f;
+            if (landed || airtime > 4f)
+            {
+                Commited = false;
+                freezeTimer = LandFreeze;
+            }
+        }
         float Dist = player != null ? Vector2.Distance(pos, player.position) : Mathf.Infinity;
         bool canSee = Dist <= Drange && (!needLOS || HasLOS());
         bool blocked = !ledgeAhead || wallAhead; 
@@ -166,8 +268,20 @@ public class SimpleEnemy : MonoBehaviour
 
             }
             float dx = lastSeen.x - pos.x;
+            if (stunTimer > 0f) {currentSpeed = 0f; break;}
+            if (Commited)
+            {
+                currentSpeed = airSpeed;
+                break;
+            }
+            if (freezeTimer > 0f)
+            {
+                currentSpeed = 0f;
+                break;
+            }
             FaceTarget(dx);
-            if (seeing && Dist <= ARange)
+
+            if (seeing && Dist <= ARange && Mathf.Abs(player.position.y - pos.y) <= AHeight)
             {
                 currentSpeed = 0f;
                 if (ATimer <= 0f)
@@ -185,15 +299,13 @@ public class SimpleEnemy : MonoBehaviour
                     safeDrop = Physics2D.Raycast(pos + Fwd(ledgeCheckOffset), Vector2.down, Maxfall, groundLayer).collider != null;
                 }
                 bool stopAtLedge = grounded && !ledgeAhead && !safeDrop;
-                bool stopAtWall = grounded && wallAhead && CanJump;
+                bool stopAtWall = grounded && wallAhead && !CanJump;
                 bool alignedX = Mathf.Abs(dx) < StopX;
                 currentSpeed = (stopAtLedge || stopAtWall || alignedX) ? 0f : Aspeed;
                 bool playerAbove = seeing && JifAbove > 0f && player.position.y - pos.y > JifAbove && Mathf.Abs(dx) <= ARange;
-                if (CanJump && grounded && Jtimer <= 0f && (wallAhead || playerAbove))
-                {
-                    Jqueue = true;
-                    Jtimer = JCooldown;
-                }
+                if (CanJump && grounded && Jtimer <= 0f && (wallAhead || playerAbove)) takeOff(Jheight);
+                else if (safeDrop && !alignedX && Jtimer <= 0f) takeOff(dropHop);
+
             }
             break;
 
@@ -204,6 +316,7 @@ public class SimpleEnemy : MonoBehaviour
                 {
                     DoAttack();
                     ATimer = ACool;
+                    freezeTimer = ARecover;
                     state = State.Chase;
                 }
             break;
@@ -223,11 +336,12 @@ public class SimpleEnemy : MonoBehaviour
 
     void FixedUpdate() // actual movement
     {
+        if (stunTimer > 0f) return;
         Vector2 vel = rb.linearVelocity;
         vel.x = currentSpeed * facing;
         if (Jqueue)
         {
-            vel.y = Jheight;
+            vel.y = hopVel;
             Jqueue = false;
         }
         rb.linearVelocity = vel;
@@ -249,5 +363,5 @@ public class SimpleEnemy : MonoBehaviour
         Gizmos.DrawWireSphere(pos + Fwd(wallCheckOffset), checkRadius);
     }
 }
-
+// 	brx dfwxdoob uhdg pb vfulsw dqg fduhg hqrxjk wr ghfrgh wklv phvvdjh, lp wrxfkhg uhdoob. (CCipher)
 // teto kept me sane - pradhyot.N 22/10/2026 (this is the script signiture)

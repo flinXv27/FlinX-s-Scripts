@@ -7,7 +7,7 @@ using System.Collections;
 // remember, if the variable is public it can be changed within unity itself for ur testing
 public class playercon : MonoBehaviour
 {
-    // some common prefixes i use:
+    // some common prefixes i use: (Note: will not be the same across scripts)
     // D = dashing or variables that link to dashing
     // W = wall jumping or holding / or variables that link to that
     // S = animation states
@@ -17,8 +17,10 @@ public class playercon : MonoBehaviour
     Rigidbody2D rb; 
     Animator anim;
     SpriteRenderer sr;
-    Vector2 move;
-    bool Grounded; // checks if player is on the ground
+    [HideInInspector] public Vector2 move;
+    [HideInInspector] public bool Grounded; // checks if player is on the ground
+    [HideInInspector] public int attackState;
+    float knockTimer;
     int currentState;
     public float coyoteTime = 0.12f; // this is the coyote time variable
     float coyoteTimer;
@@ -26,8 +28,8 @@ public class playercon : MonoBehaviour
     public float jumpBufferTime = 0.12f; // this for jump buffering
 
     static int IdleS = Animator.StringToHash("MukIdle"); // yeah im not using the animator controller (remove if you are using it)
-    static int WalkS = Animator.StringToHash("MukWalk"); // rename these to your animation names so that it work properly
-    static int DashS = Animator.StringToHash("Mukdash"); // these will only work if  your animations tare facing rightwards you can change it but it will require diving into the code
+    static int WalkS = Animator.StringToHash("MukWalk");
+    static int DashS = Animator.StringToHash("Mukdash");
     static int JumpS = Animator.StringToHash("MukJump");
     static int WallSlideS = Animator.StringToHash("MukWallSlide");
 
@@ -58,7 +60,7 @@ public class playercon : MonoBehaviour
     public float Ddecay = 60f; 
     public TrailRenderer dashTrail; // just like celeste it makes copies of the character while dashing
     bool Dfrozen; // checks if the player controls are frozen
-    bool Dashing;
+    [HideInInspector] public bool Dashing;
     bool Dqueue; // checks if shift was pressed and sees if dashing is allowed
     bool CanDash = true;
     float Dtimer; // how much time is left on the dash
@@ -66,6 +68,8 @@ public class playercon : MonoBehaviour
     float Dcooler; // the cooldown timer 
     Vector2 Ddir; // the direction of the current dash that is normalized so that digonals don't magically giga increase ur speed
     float defaultGrav; // resets the player's gravity back to the amount registered normally
+
+
 
 
     void Start()
@@ -117,6 +121,7 @@ public class playercon : MonoBehaviour
 
         int newState; // these are for the animation states, if you want to add more animations, add them here and in the animator controller
         if (Dashing) newState = DashS;
+        else if (attackState != 0) newState = attackState;
         else if (WallSlide) newState = WallSlideS;
         else if (!Grounded) newState = JumpS;
         else if (move.x == 0) newState = IdleS;
@@ -136,6 +141,11 @@ public class playercon : MonoBehaviour
         Time.timeScale = 1f;
         Dfrozen = false;
         BeginDashMove();
+    }
+    public void Knockback(Vector2 vel, float time)
+    {
+        rb.linearVelocity = vel;
+        knockTimer = time;
     }
     Vector2 GetDashDir() // finds the direction the dash will travel
     {
@@ -162,6 +172,12 @@ public class playercon : MonoBehaviour
     {
         if (WjumpTimer > 0) WjumpTimer -= Time.fixedDeltaTime;
         if (Dcooler > 0) Dcooler -= Time.fixedDeltaTime;
+        if (knockTimer > 0f)
+        {
+            knockTimer -= Time.fixedDeltaTime;
+            Dqueue = false;
+            return;
+        }
         Vector2 vel = rb.linearVelocity;
         
         if (Dqueue)
@@ -229,7 +245,6 @@ public class playercon : MonoBehaviour
 
         if (WallSlide && vel.y <= .1f) vel.y = -WSlideSpeed; // wall slide speed
         rb.linearVelocity = vel;
-        Debug.Log("grounded: " + Grounded + " wallslide: " + WallSlide + " onwall: " + OnWall + " touchleft: " + touchLeft + " touchright: " + touchRight); // just a simple debug for everything important, delete after you are done testing
     }
 }
 // this was actual hell to write - Pradhyot.N 20/10/26 (dont remove this comment, its the signature)

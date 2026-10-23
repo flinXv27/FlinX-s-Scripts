@@ -11,8 +11,8 @@ a guide by pradhyot.N
 - [Camera Script](#camera-scripts)
 - [Collectible Scripts](#collectible-scripts)
 - [Enemy AI Script & AI Combat Script](#enemy-ai--ai-combat)
-- [Player Combat Script]
-- [Complete Player Script]
+- [Player Combat Script](#player-combat)
+- [Death Popup Script](#death-popup)
 - [All Scripts](#all-scripts)
 ## Movement script / Player controller
 * note: this script is only focusing on the movement aspects of the game, if you want combat or a full movement + combat script then it will be introduced in a later interation of this file
@@ -98,12 +98,12 @@ your script component should now look like this:\
 
 the script and player should now function as intended 
 
-### OPTIONAL: using the script's animator
-the script ive made hard codes the animation so youll need to change the way your animator is set out, it heavily simplifies the process, after chcages it should look something like this:
+OPTIONAL: using the script's animator
+the script ive made hard codes the animation so youll need to change the way your animator is set out, it heavily simplifies the process, after changes it should look something like this:
 ![Image not Found](picturesfortutorials\animator.png)
 TLDR: remove ur animation processes and rewire kinda like the image
 
-
+OPTIONAL: the script houses a trail function, simply input a charcter trail and it will be made whenever the player makes a dash like in celeste
 ## Camera Scripts
 > [camera_script_1](camera.cs)\
 > [Camera_script_2](Camera2.cs)\
@@ -203,14 +203,51 @@ You've just completed the hard part now all you need to do is adjust the variabl
 - you can attempt to delve into the code if you please but i really don't recommend changing too much other than what ive annotated
 
 
-
-
-
-
 ## Player Combat
-unfinished for now
-## Finalized Player Script
-unfinished for now
+This will be alot. you might've seen earlier versions of enemy scripts and player scripts but now they both extend to over 300 lines, how fun!
+> [Player Combat Script](PlayerCombat.cs)
+
+once placing the script onto the player charcter you will be met with this new component within the inspector window:\
+![Image Not Found](picturesfortutorials\CombatStart.png)
+there is not too much to change here but we will have to do some more work with layers and gizmos,\
+Firstly to set the layers, place all enemies on the same level, remember:
+* Player and Enemies must **NOT** be on the same layer
+* Enemies and Players must **NOT** be on the same layer as the tilemap
+
+Now you just have to set the enemy layer in the script component to be the layer all the enemies are on
+
+To adjust the range of the player's attacks use the different gizmos (red circles) around the player to find the ideal attack range for you\
+also adjust values to your liking
+
+If you run the script you are likely to realize that it doesn't really work that is because we have to continue to the next chapter to make it work [Death Card](#death-popup)
+
+OPTIONAL: there is another gameobject section where you can place a slash effect to make it visible when the attack is played
+
+## Death Popup
+
+> [death Popup Script](FailPopup.cs)
+
+you would've done a bit of this with mr scott using his tutorials but now it gets hella complex\
+Firstly you'd want to create a canvas in the unity heirachy\
+![Image not found](picturesfortutorials\UIcreation.png)\
+you'd then want to make a panel as a child and another panel as a child to that, then you can add whatever you wish for the actual interactives\
+Example:\
+![Image not found](picturesfortutorials\ExampleUISet.png)
+* popup is for the first panel
+* card represents the second panel
+* both of these are important rename because it makes organisation later easier
+
+Once you set up much like the example add the FailPopup script onto the canvas in the heirachy\
+Now within the script component within the canvas set the UI refrences with the Popup Root = popup, card = card, and the title text is completely optional.
+
+Once its been setup go back to the player character and scroll to the combat script if you have that implemented otherwise the remainder of this tutorial will not concern you.\
+Now within "Fail Popup" insert the canvas\
+in total your 2 components should look like this:\
+![Image not Found](picturesfortutorials/PopupComponent.png)
+![Image not Found](picturesfortutorials/CombatEnd.png)
+
+OPTIONAL: if you have buttons or scripts for buttons you can program them to do stuff
+
 ## All Scripts
 for those who just want the scripts and no waffle;
 > [Sophisticated Movement Script](playercon.cs)\
@@ -221,4 +258,6 @@ for those who just want the scripts and no waffle;
 > [Teacher's_Camera](CameraFollow.cs)\
 > [Moving Collectible](HealthCollectible.cs)\
 > [basic collectible](Collectible.cs)\
-> [Base enemy](SimpleEnemy.cs)
+> [Base enemy](SimpleEnemy.cs)\
+> [death Popup Script](FailPopup.cs)\
+> [Player Combat Script](PlayerCombat.cs)
