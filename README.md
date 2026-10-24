@@ -7,3 +7,5 @@ If you have any issues or want to request a script, please me contact at
 or use Whatsapp/ DM me if you know the contact
 
 Read UsingScripts.md to actually understand and use the scripts as you can't really infer from opening page
+
+All scripts have been checked and made by me
