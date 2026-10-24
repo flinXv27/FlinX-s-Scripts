@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 // this was made for multiple people as why there are so many comments
@@ -7,7 +8,7 @@ using UnityEngine;
 // remember, if the variable is public it can be changed within unity itself for ur testing
 // many debug features are currently commented uncomment if you want to use them, also only use one debug at a time
 // honestly i'll add the rest of the comments if enough people want it but im really not bothered right now
-public class SimpleEnemy : MonoBehaviour, IDamageable
+public class SimpleEnemy : MonoBehaviour, IDamageable, IResettable
 {
     // some common prefixes i use: (Note: will not be the same across scripts)
     // D = Detection or things that would link to that
@@ -35,6 +36,7 @@ public class SimpleEnemy : MonoBehaviour, IDamageable
     float airSpeed;
     float freezeTimer;
     float hopVel;
+    float startFacing;
     bool Commited;
     bool Jqueue;
     bool grounded;
@@ -43,6 +45,7 @@ public class SimpleEnemy : MonoBehaviour, IDamageable
     int currentAnim;
     bool SpriteFacingL = true;
     Vector2 lastSeen; 
+    Vector2 startPos;
     int health;
   
 
@@ -95,6 +98,9 @@ public class SimpleEnemy : MonoBehaviour, IDamageable
     Color baseColor;
     IDamageable playerHealth;
 
+    [Header("Major Enemy Check")]
+    public bool MajorEnemy = false;
+
     static int IdleS = Animator.StringToHash("officerIdle"); // rename to match your animation clips
     static int WalkS = Animator.StringToHash("officerWalk");
     static int AttackS = Animator.StringToHash("officerAttack");
@@ -106,7 +112,7 @@ public class SimpleEnemy : MonoBehaviour, IDamageable
         bool inHeight = Mathf.Abs(player.position.y - transform.position.y) <= AHeight + .3f;
         if (inRange && inHeight)
         {
-            playerHealth.TakeDamage(Damage, transform.position);
+            playerHealth.TakeDamage(Damage, transform.position, MajorEnemy);
         }
     }
     
@@ -153,12 +159,12 @@ public class SimpleEnemy : MonoBehaviour, IDamageable
         return new Vector2(offset.x * facing, offset.y);
     }
 
-    public void TakeDamage(int amount, Vector2 from)
+    public void TakeDamage(int amount, Vector2 from, bool major = false)
     {
         health -= amount;
         if (health <= 0)
         {
-            Destroy(gameObject);
+            gameObject.SetActive(false);
             return;
         }
         flashTimer = HitFlashTime;
@@ -194,8 +200,30 @@ public class SimpleEnemy : MonoBehaviour, IDamageable
         }
 
     }
+    void OnDestroy()
+    {
+        ResetManager.Unregister(this);
+    }
 
-    
+    public void ResetToStart()
+    {
+        gameObject.SetActive(true);
+        IgnorePlayerCollisions();
+        transform.position = startPos;
+        rb.linearVelocity = Vector2.zero;
+        health = MaxHealth;
+        state = State.Patrol;
+        facing = startFacing;
+        applyFacing();
+        currentSpeed = 0f;
+        turnTimer = ATimer = windupTimer = Jtimer = loseTimer = 0f;
+        airtime = airSpeed = freezeTimer = stunTimer = flashTimer = 0f;
+        sr.color = baseColor;
+        flashing = false;
+        currentAnim = 0;
+    }
+
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -209,8 +237,26 @@ public class SimpleEnemy : MonoBehaviour, IDamageable
         {
             player = p.transform;
             playerHealth = p.GetComponent<IDamageable>();
-            if (playerHealth == null)
-                Debug.LogError($"Player '{p.name}' must have a component implementing IDamageable.", p);
+            if (playerHealth == null) Debug.LogError($"Player '{p.name}' must have a component implementing IDamageable.", p);
+            IgnorePlayerCollisions();
+        }
+        startPos = transform.position;
+        startFacing = facing;
+        ResetManager.Register(this);
+    }
+
+    void IgnorePlayerCollisions()
+    {
+        if (player == null) return;
+
+        Collider2D[] enemyColliders = GetComponentsInChildren<Collider2D>();
+        Collider2D[] playerColliders = player.GetComponentsInChildren<Collider2D>();
+        foreach (Collider2D enemyCollider in enemyColliders)
+        {
+            foreach (Collider2D playerCollider in playerColliders)
+            {
+                Physics2D.IgnoreCollision(enemyCollider, playerCollider);
+            }
         }
     }
 

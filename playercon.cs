@@ -68,6 +68,7 @@ public class playercon : MonoBehaviour
     float Dcooler; // the cooldown timer 
     Vector2 Ddir; // the direction of the current dash that is normalized so that digonals don't magically giga increase ur speed
     float defaultGrav; // resets the player's gravity back to the amount registered normally
+    public bool DashAvailable => CanDash && Dcooler <= 0f;
 
 
 
@@ -147,11 +148,45 @@ public class playercon : MonoBehaviour
         rb.linearVelocity = vel;
         knockTimer = time;
     }
+    public void ResetState()
+    {
+        Dashing = false;
+        Dqueue = false;
+        Dboost = 0f;
+        knockTimer = 0f;
+        WjumpTimer = 0f;
+        Jbuffer = 0f;
+        attackState = 0;
+        rb.gravityScale = defaultGrav;
+        if (dashTrail != null) dashTrail.emitting = false;
+    }
+    public bool RestoreDash()
+    {
+        if (DashAvailable) return false;
+        CanDash = true;
+        Dcooler = 0f;
+        return true;
+    }
+    public Vector2 GetMouseOrMoveDirection()
+    {
+        Camera camera = Camera.main;
+        if (camera != null)
+        {
+            Ray mouseRay = camera.ScreenPointToRay(Input.mousePosition);
+            Plane playerPlane = new Plane(Vector3.forward, transform.position);
+            if (playerPlane.Raycast(mouseRay, out float distance))
+            {
+                Vector2 mouseDirection = (Vector2)mouseRay.GetPoint(distance) - (Vector2)transform.position;
+                if (mouseDirection != Vector2.zero) return mouseDirection.normalized;
+            }
+        }
+
+        if (move != Vector2.zero) return move.normalized;
+        return sr.flipX ? Vector2.right : Vector2.left;
+    }
     Vector2 GetDashDir() // finds the direction the dash will travel
     {
-        Vector2 dir = new Vector2(move.x, move.y);
-        if (dir == Vector2.zero) dir = sr.flipX ? Vector2.right : Vector2.left;
-        return dir.normalized;
+        return GetMouseOrMoveDirection();
     }
  
     void BeginDashMove()
@@ -248,3 +283,11 @@ public class playercon : MonoBehaviour
     }
 }
 // this was actual hell to write - Pradhyot.N 20/10/26 (dont remove this comment, its the signature)
+//L dp mxvw d olwwoh eurnhq, iroorz pb hbhv
+//Brx sxw brxu ihdu lqvlgh d jluo wkdw'v eurnhq lqvlgh
+//Mxvw krsh brxu zlvk iru mrb zloo frph rxw wuxh (Zloo frph rxw wuxh)
+//Sxoolqj sdshu rxw pb vzhhwv, L'p sudblqj iru wlsv
+//Exw rqob iloohg zlwk eulwwoh sduwv olnh d edj ixoo ri fklsv
+//Zkr dp L wr ghqb zkhuh L'p iurp?
+//Zkdw L'p iurp? - fkruxv ri Srwhwr fkls eb URPD
+// shift 3 

@@ -6,14 +6,27 @@ a guide by pradhyot.N
 * you are able to change scripts as you please
 * open the unity package file in a new unity project if you want to see the prototype area for yourself and play around in it
 
+<span style="color: red">**Note: The guides will probably not be updated unless enough people request for it, in the short term contact me and i'll help you set it up and troubleshoot.**</span>
+
 ## Table of Contents
+- [REQUIRED scripts](#required-scripts)
 - [Movement Script](#movement-script--player-controller)
 - [Camera Script](#camera-scripts)
 - [Collectible Scripts](#collectible-scripts)
 - [Enemy AI Script & AI Combat Script](#enemy-ai--ai-combat)
 - [Player Combat Script](#player-combat)
 - [Death Popup Script](#death-popup)
+- [Checkpoints & KillBoxes](#checkpoints-and-killboxes)
 - [All Scripts](#all-scripts)
+
+## REQUIRED SCRIPTS
+* if you are following the sophisticated package then you NEED to add these scripts they are simple public interfaces but they are required for anything to run properly
+> [IDamageable](IDamageable.cs)\
+> [Reset Manager](ResetManager.cs)
+
+**IDamageable** - a simple public function that takes in 3 variables, is shared between so many different scripts
+
+**Reset Manager** - a public interface that introduces 3 different functions, as the name implies it manages what happens when a player dies
 ## Movement script / Player controller
 * note: this script is only focusing on the movement aspects of the game, if you want combat or a full movement + combat script then it will be introduced in a later interation of this file
 
@@ -119,31 +132,10 @@ also cinemachine is viable and doesn't require code, if you want to learn how to
 > [Moving Collectible](HealthCollectible.cs)\
 > [basic collectible](Collectible.cs)
 
-these are two different scripts that do as they are named, one makes the collectible float up and down, whilst the basic is one that you would've made with mr scott/
-quick reminder that you would have to set tags for both the player and the collectible and to also make the collectible's hitbox a trigger
+these are two different scripts that do as they are named, one makes the collectible float up and down, whilst the basic is one that you would've made with mr scott\
+quick reminder that you would have to set tags for both the player and the collectible and to also make the collectible's hitbox a trigger\
+the moving collectible also adds health and restores dash for the player
 
-OPTIONAL: Within the moving collectible there is a setting to add health to the player if you want to remove that simply comment out the health line/
-but if you wanted to keep that place the following code into the player script:/
-```c#
-    public void ChangeHealth(int amount)
-    {
-        if (amount < 0 || amount > 0)
-        {
-            if (isInvincible)
-            {
-                return;
-            }
-            isInvincible = true;
-            damageCooldown = timeInvincible;
-            if (amount < 0)
-            {
-                animator.SetTrigger("Hit");
-            }
-        }
-        currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxHealth);
-        UIHandler.instance.SetHealthValue(currentHealth / (float)maxHealth);
-    }
-```
 the UI handler section only relates if you are using a ui feature    
 
 ## Enemy AI & AI Combat
@@ -226,6 +218,7 @@ OPTIONAL: there is another gameobject section where you can place a slash effect
 ## Death Popup
 
 > [death Popup Script](FailPopup.cs)
+> [Screen Fade to black](ScreenFade.cs)
 
 you would've done a bit of this with mr scott using his tutorials but now it gets hella complex\
 Firstly you'd want to create a canvas in the unity heirachy\
@@ -248,8 +241,16 @@ in total your 2 components should look like this:\
 
 OPTIONAL: if you have buttons or scripts for buttons you can program them to do stuff
 
+## Checkpoints and Killboxes
+> [CheckPoint Script](Checkpoint.cs)\
+> [KillZone Script](KillZone.cs)
+
+simply attach these to game objects with a box collider to make them work
+
 ## All Scripts
 for those who just want the scripts and no waffle;
+> [IDamageable](IDamageable.cs)\
+> [Reset Manager](ResetManager.cs)\
 > [Sophisticated Movement Script](playercon.cs)\
 > [basic Movement Script](playercon1.cs)\
 > [camera_script_1](camera.cs)\
@@ -260,4 +261,6 @@ for those who just want the scripts and no waffle;
 > [basic collectible](Collectible.cs)\
 > [Base enemy](SimpleEnemy.cs)\
 > [death Popup Script](FailPopup.cs)\
-> [Player Combat Script](PlayerCombat.cs)
+> [Player Combat Script](PlayerCombat.cs)\
+> [CheckPoint Script](Checkpoint.cs)\
+> [KillZone Script](KillZone.cs)

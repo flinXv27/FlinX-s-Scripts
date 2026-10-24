@@ -32,12 +32,15 @@ public class HealthCollectible : MonoBehaviour
     }
     public void OnTriggerEnter2D(Collider2D other)
     {
-        Playercon controller = other.GetComponent<PlayerController>();
-        if (controller != null && controller.health < controller.maxHealth)
-        {
-            controller.ChangeHealth(HealingAmount);
-            Destroy(gameObject); 
-        }
+        PlayerCombat player = other.GetComponentInParent<PlayerCombat>();
+        if (player == null || player.IsDead) return;
+
+        playercon controller = other.GetComponentInParent<playercon>();
+        if (controller == null) return;
+
+        bool restoredHealth = player.Heal(HealingAmount);
+        bool restoredDash = controller.RestoreDash();
+        if (restoredHealth || restoredDash) Destroy(gameObject);
     }
 }
 
