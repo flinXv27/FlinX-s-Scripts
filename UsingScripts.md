@@ -6,7 +6,7 @@ a guide by pradhyot.N
 * you are able to change scripts as you please
 * open the unity package file in a new unity project if you want to see the prototype area for yourself and play around in it
 
-<span style="color: red">**Note: The guides will probably not be updated unless enough people request for it, in the short term contact me and i'll help you set it up and troubleshoot.**</span>
+<span style="color: red">**Note: The guides are outdated and will probably not be updated unless enough people request for it or i decide to update it for L.O.L, in the short term contact me and i'll help you set it up and troubleshoot.**</span>
 
 ## Table of Contents
 - [REQUIRED scripts](#required-scripts)
@@ -147,15 +147,17 @@ This section makes the following few assumptions:/
 if any of the following doesn't apply to your game you will need to make some tweaks to the code/
 fortunately you should be able to understand the script somewhat as there are comments explaining what most features do.
 
+> [Enemy Inheritance](EnemyBase.cs)\
 > [Patrolling Meele Enemy](SimpleEnemy.cs)\
-> [more will be added](null)
+> [Projectile enemy](ShooterEnemy.cs)\
+> [Flying Enemy](FlyingEnemy.cs)\
+> [Charging Enemy](ChargerEnemy.cs)
 
 the script's name is very misleading this script is **NOT** simple anyways links to the different installation guides:
 - [General Information](#general-information) **recommened to start on**
 - [Base enemy (Patrolling Meele Enemy)](#base-enemy) 
 - [Projectile Shooting enemy]
-- [tracker enemy]
-- [boss enemy]
+- [**Directly Request Me for More Enemy Details**](https://mail.google.com/mail/u/0/?hl=en#inbox) this is done to limit confusion when it comes to the different enemies
 ### General Information
 before we actually start implementaion we need to fully comprehend 2 concepts;
 
@@ -175,7 +177,7 @@ this will be extremely important later so keep note of this
 you would've already done work with tags when working with Mr Scott but they are now more important than ever, they will be one of 3 traits that make the enemy pathfinding possible\
 Meanwhile you would've set layers within the player controller so you should already understand how that works as well
 
-### Base enemy
+### Base enemy (simple enemy)
 the base enemy will be the simplest to implement into your game, saying that it does look like plane controls when you open it up for the first time\
 anyways upon adding the script to the player enemy the script component should look like this:\
 ![Image Not Found](picturesfortutorials\SimpleAIStart.png)\
@@ -194,6 +196,9 @@ the enemy sprite should now looks something like this: \
 You've just completed the hard part now all you need to do is adjust the variables to your liking and you are complete!
 - you can attempt to delve into the code if you please but i really don't recommend changing too much other than what ive annotated
 
+### Advanced Enemy
+<span style="color: red">**Warning:**</span> this is an advanced enemy as thus a guide will not be written, if you want instructions for it request it from me
+
 
 ## Player Combat
 This will be alot. you might've seen earlier versions of enemy scripts and player scripts but now they both extend to over 300 lines, how fun!
@@ -211,7 +216,7 @@ Now you just have to set the enemy layer in the script component to be the layer
 To adjust the range of the player's attacks use the different gizmos (red circles) around the player to find the ideal attack range for you\
 also adjust values to your liking
 
-If you run the script you are likely to realize that it doesn't really work that is because we have to continue to the next chapter to make it work [Death Card](#death-popup)
+If you run the script you are likely to realize that it doesn't really work that is because we have to continue to the next chapter to make it work [Death Card](#death-popup) (this has been changed)
 
 OPTIONAL: there is another gameobject section where you can place a slash effect to make it visible when the attack is played
 
@@ -249,6 +254,7 @@ simply attach these to game objects with a box collider to make them work
 
 ## All Scripts
 for those who just want the scripts and no waffle;
+> [Enemy Inheritance](EnemyBase.cs)\
 > [IDamageable](IDamageable.cs)\
 > [Reset Manager](ResetManager.cs)\
 > [Sophisticated Movement Script](playercon.cs)\
@@ -263,4 +269,7 @@ for those who just want the scripts and no waffle;
 > [death Popup Script](FailPopup.cs)\
 > [Player Combat Script](PlayerCombat.cs)\
 > [CheckPoint Script](Checkpoint.cs)\
-> [KillZone Script](KillZone.cs)
+> [KillZone Script](KillZone.cs)\
+> [Projectile enemy](ShooterEnemy.cs)\
+> [Flying Enemy](FlyingEnemy.cs)\
+> [Charging Enemy](ChargerEnemy.cs)
