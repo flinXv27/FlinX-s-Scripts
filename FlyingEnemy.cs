@@ -78,7 +78,7 @@ public class FlyingEnemy : EnemyBase
  
     protected override void OnInit()
     {
-        defaultGrav = 0f;      // it flies, so ResetToStart must not give gravity back
+        defaultGrav = 0f;
         rb.gravityScale = 0f;
         if (PPrefab == null) Debug.LogWarning($"{name}: no projectile prefab assigned", this);
     }
@@ -92,7 +92,7 @@ public class FlyingEnemy : EnemyBase
         }
         else if ((state == State.WindUp || state == State.Swoop) && InterruptAttacks)
         {
-            BeginRecover(); // knockback from the base class then sends it flying
+            BeginRecover();
         }
         else if (state == State.Patrol && player != null)
         {
@@ -127,7 +127,6 @@ public class FlyingEnemy : EnemyBase
         {
             case State.Patrol:
             {
-                // drift left/right around the start point, turn at either end or at a wall
                 float bob = Mathf.Sin(Time.time * BobSpeed) * BobAmount;
                 desiredVel = new Vector2(facing * Pspeed, Mathf.Clamp((startPos.y + bob - pos.y) * 3f, -Pspeed, Pspeed));
                 bool atEnd = (facing > 0f && pos.x >= startPos.x + PatrolRange) || (facing < 0f && pos.x <= startPos.x - PatrolRange);
@@ -154,13 +153,11 @@ public class FlyingEnemy : EnemyBase
  
                 if (seeing)
                 {
-                    // close enough and ready -> swoop
                     if (SwoopCooldown <= 0f && dist <= SRange)
                     {
                         BeginWindup();
                         break;
                     }
-                    // otherwise shoot from range
                     bool holdFire = dist <= SRange && !ShootWhenClose;
                     if (shotTimer <= 0f && dist <= ShotRange && !holdFire)
                     {
@@ -176,7 +173,7 @@ public class FlyingEnemy : EnemyBase
  
             case State.Aim:
             {
-                desiredVel = Vector2.zero; // hangs in the air while it lines up the shot
+                desiredVel = Vector2.zero; 
                 if (player != null) FaceTarget(player.position.x - pos.x);
                 AimTimer -= Time.deltaTime;
                 if (AimTimer <= 0f)
@@ -191,7 +188,7 @@ public class FlyingEnemy : EnemyBase
             case State.WindUp:
             {
                 FaceTarget(swoopTarget.x - pos.x);
-                desiredVel = -swoopDir * WindupBackSpeed; // pulls back slightly, telegraphing the dive
+                desiredVel = -swoopDir * WindupBackSpeed;
                 windTimer -= Time.deltaTime;
                 if (windTimer <= 0f) StartSwoop();
                 break;
@@ -201,13 +198,12 @@ public class FlyingEnemy : EnemyBase
             {
                 swoopTimer -= Time.deltaTime;
                 SwoopHitCheck();
-                if (swoopTimer <= 0f) BeginRecover(); // distance / obstacle stops are checked in FixedUpdate
+                if (swoopTimer <= 0f) BeginRecover();
                 break;
             }
  
             case State.Recover:
             {
-                // curve back up towards the hover spot (the Accel limit is what makes it a smooth arc)
                 if (player != null) lastSeen = player.position;
                 desiredVel = HoverVelocity(pos);
                 RecoverTimer -= Time.deltaTime;
@@ -230,18 +226,14 @@ public class FlyingEnemy : EnemyBase
             rb.linearVelocity = swoopDir * SSpeed;
             return;
         }
-        if (stunTimer > 0f) return; // let the knockback play out
+        if (stunTimer > 0f) return;
  
         Vector2 v = AvoidObstacles(desiredVel);
         rb.linearVelocity = Vector2.MoveTowards(rb.linearVelocity, v, accel * Time.fixedDeltaTime);
     }
- 
-    // ---------- movement helpers ----------
- 
-    // velocity that takes it towards its hover spot above / beside the player, slowing as it arrives
     Vector2 HoverVelocity(Vector2 pos)
     {
-        float side = pos.x >= lastSeen.x ? 1f : -1f; // stays on whichever side it's already on
+        float side = pos.x >= lastSeen.x ? 1f : -1f;
         float bob = Mathf.Sin(Time.time * BobSpeed) * BobAmount;
         Vector2 target = lastSeen + new Vector2(side * HoverDistanceX, HoverHeight + bob);
         Vector2 to = target - pos;
@@ -249,7 +241,7 @@ public class FlyingEnemy : EnemyBase
         return to.normalized * Mathf.Min(Aspeed, to.magnitude * 3f);
     }
  
-    // zero out any part of the velocity that is pushing into ground / walls
+
     Vector2 AvoidObstacles(Vector2 v)
     {
         Vector2 pos = transform.position;
@@ -258,11 +250,9 @@ public class FlyingEnemy : EnemyBase
         return v;
     }
  
-    // ---------- swoop ----------
- 
     void BeginWindup()
     {
-        swoopTarget = player.position; // locked now so the player can dodge it
+        swoopTarget = player.position; 
         Vector2 d = swoopTarget - (Vector2)transform.position;
         swoopDir = d.sqrMagnitude > .01f ? d.normalized : Vector2.down;
         windTimer = SWindup;
@@ -282,7 +272,7 @@ public class FlyingEnemy : EnemyBase
         state = State.Swoop;
     }
  
-    // checked every physics step (before moving) so a fast dive can't skip through the ground
+
     bool ShouldStopSwoop()
     {
         Vector2 pos = transform.position;
@@ -291,7 +281,6 @@ public class FlyingEnemy : EnemyBase
         return false;
     }
  
-    // ends the dive but keeps the current velocity, so Accel bends it into a curve back up
     void BeginRecover()
     {
         state = State.Recover;
@@ -304,12 +293,10 @@ public class FlyingEnemy : EnemyBase
         if (hitThisSwoop || player == null || playerHealth == null) return;
         Vector2 d = (Vector2)player.position - (Vector2)transform.position;
         if (Mathf.Abs(d.x) > HitBoxHalfSize.x || Mathf.Abs(d.y) > HitBoxHalfSize.y) return;
-        if (playerCombat != null && (playerCombat.Immune || playerCombat.IsDead)) return; // player can dash through it
+        if (playerCombat != null && (playerCombat.Immune || playerCombat.IsDead)) return;
         playerHealth.TakeDamage(SDamage, transform.position, MajorEnemy);
         hitThisSwoop = true;
     }
- 
-    // ---------- shooting ----------
  
     void Fire()
     {
@@ -332,16 +319,15 @@ public class FlyingEnemy : EnemyBase
         Gizmos.DrawWireSphere(pos, SRange);
         Gizmos.DrawWireCube(pos, new Vector3(HitBoxHalfSize.x * 2f, HitBoxHalfSize.y * 2f, 0f));
  
-        Gizmos.color = Color.blue; // patrol range
+        Gizmos.color = Color.blue; 
         Gizmos.DrawLine(home + Vector2.left * PatrolRange, home + Vector2.right * PatrolRange);
  
-        Gizmos.color = Color.white; // hover spots relative to the player's side
+        Gizmos.color = Color.white; 
         Gizmos.DrawWireSphere(pos + new Vector2(MuzzleOffset.x * facing, MuzzleOffset.y), .1f);
         Gizmos.DrawLine(pos, pos + new Vector2(ObstacleCheckDist, 0f));
         Gizmos.DrawLine(pos, pos + new Vector2(-ObstacleCheckDist, 0f));
         Gizmos.DrawLine(pos, pos + new Vector2(0f, ObstacleCheckDist));
         Gizmos.DrawLine(pos, pos + new Vector2(0f, -ObstacleCheckDist));
     }
-
-  
 }
+// That was fun - pradhyot.N 24/10/2026
