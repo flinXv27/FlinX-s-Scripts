@@ -4,3 +4,4 @@ public interface IDamageable
 {
     void TakeDamage(int amount, Vector2 from, bool major = false);
 }
+// made by pradhyot. N

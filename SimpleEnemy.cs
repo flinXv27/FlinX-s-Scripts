@@ -209,6 +209,7 @@ public class SimpleEnemy : MonoBehaviour, IDamageable, IResettable
     {
         gameObject.SetActive(true);
         IgnorePlayerCollisions();
+        IgnoreEnemyCollisions();
         transform.position = startPos;
         rb.linearVelocity = Vector2.zero;
         health = MaxHealth;
@@ -240,6 +241,7 @@ public class SimpleEnemy : MonoBehaviour, IDamageable, IResettable
             if (playerHealth == null) Debug.LogError($"Player '{p.name}' must have a component implementing IDamageable.", p);
             IgnorePlayerCollisions();
         }
+        IgnoreEnemyCollisions();
         startPos = transform.position;
         startFacing = facing;
         ResetManager.Register(this);
@@ -257,6 +259,28 @@ public class SimpleEnemy : MonoBehaviour, IDamageable, IResettable
             {
                 Physics2D.IgnoreCollision(enemyCollider, playerCollider);
             }
+        }
+    }
+
+    void IgnoreEnemyCollisions()
+    {
+        Collider2D[] enemyColliders = GetComponentsInChildren<Collider2D>();
+        foreach (EnemyBase otherEnemy in FindObjectsByType<EnemyBase>())
+        {
+            Collider2D[] otherColliders = otherEnemy.GetComponentsInChildren<Collider2D>();
+            foreach (Collider2D enemyCollider in enemyColliders)
+                foreach (Collider2D otherCollider in otherColliders)
+                    Physics2D.IgnoreCollision(enemyCollider, otherCollider);
+        }
+
+        foreach (SimpleEnemy otherEnemy in FindObjectsByType<SimpleEnemy>())
+        {
+            if (otherEnemy == this) continue;
+
+            Collider2D[] otherColliders = otherEnemy.GetComponentsInChildren<Collider2D>();
+            foreach (Collider2D enemyCollider in enemyColliders)
+                foreach (Collider2D otherCollider in otherColliders)
+                    Physics2D.IgnoreCollision(enemyCollider, otherCollider);
         }
     }
 

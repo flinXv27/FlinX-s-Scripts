@@ -314,3 +314,9 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, IResettable
         Gizmos.DrawWireSphere(pos + new Vector2(wallCheckOffset.x * facing, wallCheckOffset.y), checkRadius);
     }
 }
+// zzzz - pradhyot N 
+// because every tiny needle peirces my heart again
+// and every throb makes it throb even more
+// Hey.. give me more anestheisa 
+// Today again, my heartbeat pounds faster drumming inside my chest
+// I want to keep singing for a reason to be alive - translated lyrics of 'please doctor' by Chenomio

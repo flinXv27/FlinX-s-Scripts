@@ -8,3 +8,4 @@ public class KillZone : MonoBehaviour
         if (player != null) player.Kill();
     }
 }
+// made by pradhyot. N

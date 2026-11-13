@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(playercon))]
@@ -9,6 +10,7 @@ public class PlayerCombat : MonoBehaviour, IDamageable
     // A = Attacking or variables that relate to attacking
     // P = Period, like grace period for example
     // S = animation states
+    // p - parry, (notice how its lowercase)
     playercon pc;
     SpriteRenderer sr;
     Rigidbody2D rb;
@@ -42,13 +44,52 @@ public class PlayerCombat : MonoBehaviour, IDamageable
     public float slashLifeTime = .15f;
     float ATimer;
 
+    [Header("Parry")]
+    public KeyCode pKey = KeyCode.Mouse1;
+    public float pWindow = .25f;
+    public float PerfectpWindow = .1f;
+    public float pCooldown = .6f;
+    public float pSuccessGrace = .3f;
+    public Color pColor = Color.cyan;
+    public Color counterReadyColor = Color.yellow;
+    float pTimer;
+    float pCooldownTimer;
+    float pGraceTimer;
+
+    [Header("Perfect Parry")]
+    public ParryProjectile parryProjectile;
+    public float counterWindow = 2f;
+    public float projectileSpawnOffset = .8f;
+    float counterTimer;
+    public bool autoCounter = true;
+    public bool CounterReady => counterTimer > 0f;
+    const int CounterProjectileCount = 3;
+    const float CounterProjectileInterval = .1f;
+
+    [Header("Parry FX")]
+    public GameObject parryFx; 
+    public GameObject perfectParryFx;  
+    public float parryFxOffset = .6f;   
+    public float parryFxLifeTime = 1f;
+
     [Header("attack anims")]
     public float AAnimTime = .25f;
-    static int AttackS = Animator.StringToHash("MukAttack");
-    static int AttackUpS = Animator.StringToHash("MukAttackUp");
-    static int AttackDownS = Animator.StringToHash("MukAttackDown");
+    static int AttackS = Animator.StringToHash("MukuroAttack");
+    static int AttackUpS = Animator.StringToHash("MukuroAttackUp");
+    static int AttackDownS = Animator.StringToHash("MukuroAttackDown");
+    static int ParryStartS = Animator.StringToHash("MukuroParryStart");
+    static int ParryHitS = Animator.StringToHash("MukuroParryHit");
+    static int PerfectParryS = Animator.StringToHash("MukuroParryPerfect");
     int attackAnim;
     float AAnimTimer;
+
+    [Header("Parry animation timing")]
+    public float parryHitAnimTime = .2f;
+    public float perfectParryAnimTime = 1f;
+    float parryAnimTimer;
+    int parryAnim;
+    public bool ParryAnimationActive => pTimer > 0f || parryAnimTimer > 0f;
+    public bool ParryReactionActive => parryAnimTimer > 0f;
 
     [Header("Knockback")]
     public Vector2 HitKnockback = new Vector2(8f, 6f); //X means ur pushed sideways and Y is pushed up
@@ -60,9 +101,6 @@ public class PlayerCombat : MonoBehaviour, IDamageable
     public float respawnDelay = 1f;
     public float RespawnIFrames = 1.5f;
     Vector2 checkpoint;
-    static bool hasCheckpoint;
-    static Vector2 savedCheckpoint;
-    static string savedScene;
     public ScreenFade screenFade;
     public float fadeTime = .4f;
     public float blackHold = .15f;
@@ -83,28 +121,53 @@ public class PlayerCombat : MonoBehaviour, IDamageable
         baseColor = sr.color;
         health = maxHealth;
         checkpoint = transform.position;
-        if(hasCheckpoint && savedScene == SceneManager.GetActiveScene().name)
+        SaveData d = GameSession.Current;
+        if (d != null && d.hasCheckpoint && d.scene == SceneManager.GetActiveScene().name)
         {
-            checkpoint = savedCheckpoint;
-            transform.position = savedCheckpoint;
+            checkpoint = new Vector2(d.x, d.y);
+            transform.position = checkpoint;
+            health = Mathf.Clamp(d.health, 1, maxHealth);
+            pc.SetDashCharge(d.dashCharge);
         }
     }
 
     void Update()
     {
-        if (dead) return;
+        if (PauseMenu.IsPaused) return;
+        if (dead)
+        {
+            pc.ParryMovementLocked = false;
+            return;
+        }
         if (iTimer > 0f) iTimer -= Time.deltaTime;
         if (ATimer > 0f) ATimer -= Time.deltaTime;
         if (AAnimTimer > 0f) AAnimTimer -= Time.deltaTime;
+        if (parryAnimTimer > 0f) parryAnimTimer -= Time.deltaTime;
+        if (pTimer > 0f) pTimer -= Time.deltaTime;
+        if (pCooldownTimer > 0f) pCooldownTimer -= Time.deltaTime;
+        if (pGraceTimer > 0f) pGraceTimer -= Time.deltaTime;
+        if (counterTimer > 0f) counterTimer -= Time.deltaTime;
         bool dashing = pc.Dashing;
         if(wasDashing && !dashing) gracePTimer = dashGraceP;
         wasDashing = dashing;
         if (gracePTimer > 0f) gracePTimer -= Time.deltaTime;
-        if (dashing) AAnimTimer = 0f;
-        pc.attackState = AAnimTimer > 0f ? attackAnim : 0;
+        if (dashing) {AAnimTimer = 0f; pTimer = 0f; parryAnimTimer = 0f;}
+        if (pc.WallSliding) AAnimTimer = 0f;
+        if (parryAnimTimer > 0f && anim != null && anim.HasState(0, parryAnim)) pc.attackState = parryAnim;
+        else if (pTimer > 0f && anim != null && anim.HasState(0, ParryStartS)) pc.attackState = ParryStartS;
+        else pc.attackState = AAnimTimer > 0f ? attackAnim : 0;
+        pc.ParryMovementLocked = ParryAnimationActive;
         UpdateFlash();
 
-        if (Input.GetKey(Akey) && ATimer <= 0f && !dashing) attack();
+        if (ParryReactionActive) return;
+
+        if (Input.GetKey(pKey) && CanParry(dashing)) StartParry();
+        if (Input.GetKey(Akey) && ATimer <= 0f && CanAttack && pTimer <= 0f)
+        {
+            if (CounterReady) FireCounter();
+            else attack();
+        }
+        pc.ParryMovementLocked = ParryAnimationActive;
     }
     
     void die(bool majour)
@@ -112,25 +175,116 @@ public class PlayerCombat : MonoBehaviour, IDamageable
         dead = true;
         sr.color = baseColor;
         pc.attackState = 0;
+        pc.ParryMovementLocked = false;
         pc.enabled = false;
         rb.linearVelocity = Vector2.zero;
         if (majour) Invoke(nameof(goToFailScreen), failDelay);
         else StartCoroutine(RespawnRoutine());
     }
- 
+    bool CanParry(bool dashing)
+    {
+        return !dashing && pTimer <= 0f && pCooldownTimer <= 0f;
+    }
+
+    bool CanAttack => !pc.Dashing && !pc.DashWindup && !pc.WallSliding;
+
+    void StartParry()
+    {
+        pTimer = pWindow;
+        pCooldownTimer = pCooldown;
+        AAnimTimer = 0f;
+        parryAnimTimer = 0f;
+        pc.ParryMovementLocked = true;
+    }
+
+    void OnParried(Vector2 from)
+    {
+        bool perfect = pTimer > pWindow - PerfectpWindow;
+        pTimer = 0f;
+        pGraceTimer = pSuccessGrace;
+        if (perfect)
+        {
+            pCooldownTimer = 0f;
+            if (autoCounter)
+                LaunchCounter();
+            else counterTimer = counterWindow; // old behaviour: store it and fire on next attack
+        }
+        SetParryAnimation(perfect ? PerfectParryS : ParryHitS, perfect ? perfectParryAnimTime : parryHitAnimTime);
+        SpawnParryFx(from, perfect);
+    }
+    void SpawnParryFx(Vector2 from, bool perfect)
+    {
+        GameObject prefab = (perfect && perfectParryFx != null) ? perfectParryFx : parryFx;
+        if (prefab == null) return;
+        Vector2 dir = from - (Vector2)transform.position;
+        if (dir.sqrMagnitude < .001f) dir = sr.flipX ? Vector2.right : Vector2.left;
+        dir.Normalize();
+        Vector2 pos = (Vector2)transform.position + dir * parryFxOffset;
+        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        GameObject fx = Instantiate(prefab, pos, Quaternion.Euler(0f, 0f, angle));
+        Destroy(fx, parryFxLifeTime);
+    }
+
+    void SetParryAnimation(int state, float duration)
+    {
+        if (anim == null || !anim.HasState(0, state)) return;
+        parryAnim = state;
+        parryAnimTimer = duration;
+        pc.attackState = state;
+        pc.ParryMovementLocked = ParryAnimationActive;
+    }
+
+    void ClearParry()
+    {
+        pTimer = 0f;
+        pCooldownTimer = 0f;
+        pGraceTimer = 0f;
+        counterTimer = 0f;
+        parryAnimTimer = 0f;
+        pc.ParryMovementLocked = false;
+    }
+    void FireCounter()
+    {
+        ATimer = ACooldown;
+        counterTimer = 0f;
+        LaunchCounter();
+    }
+    void LaunchCounter()
+    {
+        if (parryProjectile == null)
+        {
+            Debug.LogWarning("No parry projectile assigned", this);
+            return;
+        }
+
+        StartCoroutine(FireCounterProjectiles());
+    }
+
+    IEnumerator FireCounterProjectiles()
+    {
+        for (int i = 0; i < CounterProjectileCount; i++)
+        {
+            Vector2 dir = GetADir();
+            pc.FaceDirection(dir);
+            Vector2 spawn = (Vector2)transform.position + dir * projectileSpawnOffset;
+            ParryProjectile projectile = Instantiate(parryProjectile, spawn, Quaternion.identity);
+            projectile.Launch(dir, enemyLayer);
+
+            if (i < CounterProjectileCount - 1)
+                yield return new WaitForSeconds(CounterProjectileInterval);
+        }
+    }
 
     void goToFailScreen()
     {
-        if (failPopup != null) failPopup.show();
+        if (failPopup != null) failPopup.Show();
         else Debug.LogWarning("No fail popup assigned");
     }
 
     public void SetCheckPoint(Vector2 pos)
     {
         checkpoint = pos;
-        hasCheckpoint = true;
-        savedCheckpoint = pos;
-        savedScene = SceneManager.GetActiveScene().name;
+        GameSession.SaveCheckpoint(SceneManager.GetActiveScene().name, pos, health, maxHealth, pc.DashCharge);
     }
 
     void UpdateFlash()
@@ -149,22 +303,48 @@ public class PlayerCombat : MonoBehaviour, IDamageable
             flashing = false;
         }
     }
+    public void ApplyDamage(int amount, Vector2 from, bool majour = false)
+    {
+        ApplyDamage(amount, from, majour, true);
+    }
 
-    public void TakeDamage(int amount, Vector2 from, bool majour = false)
+    void ApplyDamage(int amount, Vector2 from, bool majour, bool canParry)
     {
         if (dead || Immune) return;
+ 
+        if (canParry && pTimer > 0f)
+        {
+            OnParried(from);
+            return;
+        }
+ 
+        ClearpWindowOnly();
         health = Mathf.Max(0, health - amount);
         Debug.Log("Health: "+ health + "/" + maxHealth);
-
+ 
         if (health == 0)
         {
             die(majour);
             return;
         }
         iTimer = hitIFrames;
-
+ 
         float side = transform.position.x >= from.x ? 1f: -1f;
         pc.Knockback(new Vector2(side * HitKnockback.x, HitKnockback.y), KnockTime);
+    }
+
+    public void TakeDamage(int amount, Vector2 from, bool majour = false)
+    {
+        ApplyDamage(amount, from, majour, true);
+    }
+    public void TakeProjectileDamage(int amount, Vector2 from, bool majour = false)
+    {
+        ApplyDamage(amount, from, majour, false);
+    }
+
+    void ClearpWindowOnly()
+    {
+        pTimer = 0f;
     }
 
     public void Kill()
@@ -197,6 +377,7 @@ public class PlayerCombat : MonoBehaviour, IDamageable
         pc.ResetState();
         ATimer = 0f;
         AAnimTimer = 0f;
+        ClearParry();
         ResetManager.ResetAll();
 
         yield return new WaitForSeconds(blackHold);
@@ -218,6 +399,7 @@ public class PlayerCombat : MonoBehaviour, IDamageable
     {
         ATimer = ACooldown;
         Vector2 dir = GetADir();
+        pc.FaceDirection(dir);
         Vector2 point = (Vector2)transform.position + dir * AReach;
 
         if (anim != null)
@@ -227,6 +409,7 @@ public class PlayerCombat : MonoBehaviour, IDamageable
             {
                 attackAnim = hash;
                 AAnimTimer = AAnimTime;
+                pc.attackState = hash;
                 anim.Play(hash, 0, 0f);
             }
         }

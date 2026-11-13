@@ -19,6 +19,7 @@ public class FailPopup : MonoBehaviour
     public float slidefrom = 400f;
 
     CanvasGroup group;
+    StatusBarHandler statusBar;
     Vector2 restPos;
     bool shown;
 
@@ -39,16 +40,17 @@ public class FailPopup : MonoBehaviour
         if (shown && Input.GetKeyDown(retrykey)) Retry();
     }
 
-    public void show()
+    public void Show()
     {
+        if (statusBar != null) statusBar.SetVisible(false);
         if (shown || popupRoot == null || card == null) return;
         shown = true;
         if (titleText != null && FailTitles.Length > 0) titleText.text = FailTitles[Random.Range(0, FailTitles.Length)];
         Time.timeScale = 0f;
         popupRoot.SetActive(true);
-        StartCoroutine(animate());
+        StartCoroutine(Animate());
     }
-    IEnumerator animate()
+    IEnumerator Animate()
     {
         group.alpha = 0f;
         group.interactable = false;
@@ -74,12 +76,15 @@ public class FailPopup : MonoBehaviour
     public void Retry()
     {
         Time.timeScale = 1f;
-        #if UNITY_EDITOR 
-            UnityEditor.EditorApplication.isPlaying = false;
-        #else
-            Application.quit();
-        #endif
+        GameSession.ResetToLastSave();
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
+    public void ToMainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("MainMenu");
+    }
 }
 // AHHHHHHHHHHHHHHHHH - pradhyot.N 23/10/2026
+// medicine, i dont actually know any of the lyrics for it tho

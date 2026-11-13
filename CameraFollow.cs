@@ -30,3 +30,4 @@ public class CameraFollow : MonoBehaviour
         }
     }
 }
+// made by Mr Scott

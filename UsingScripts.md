@@ -1,12 +1,12 @@
 # Using These Scripts
-a guide by pradhyot.N
+guide & scripts written and programmed by pradhyot.N
 
 * this guide is intended to assist you whilst using my specific scripts or just to give you an idea on how to use some of the ideas i have installed
 * this guide will not go over what is inside the script as its only meant to inform you about how to install the script into unity
 * you are able to change scripts as you please
 * open the unity package file in a new unity project if you want to see the prototype area for yourself and play around in it
 
-<span style="color: red">**Note: The guides are outdated and will probably not be updated unless enough people request for it or i decide to update it for L.O.L, in the short term contact me and i'll help you set it up and troubleshoot.**</span>
+<span style="color: red">**Note: some guides may be outdated and will probably not be updated unless enough people request for it or i decide to update it for some reason, in the short term contact me and i'll help you set it up and troubleshoot.**</span>
 
 ## Table of Contents
 - [REQUIRED scripts](#required-scripts)
